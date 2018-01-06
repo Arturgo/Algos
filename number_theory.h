@@ -2,6 +2,7 @@
 #define NUMBER_THEORY_H
 
 #include <deque>
+#include <iostream>
 using namespace std;
 
 /* Big Unsigned Ints */
@@ -14,22 +15,17 @@ private:
 	deque<unsigned int> chunks;
 public:
 	buint();
-	buint(unsigned int val);
 	buint(unsigned long long val);
 	
 	size_t size();
 	bool get(size_t pos);
 	void set(size_t pos, bool val);
 	
+	unsigned long long to_ulong();
 	friend buint operator + (const buint& a, const buint &b);
 };
 
 buint::buint() {
-}
-
-buint::buint(unsigned int val) {
-	if(val != 0)
-		chunks.push_back(val);
 }
 
 buint::buint(unsigned long long val) {
@@ -44,7 +40,7 @@ buint::buint(unsigned long long val) {
 size_t buint::size() {
 	if(chunks.empty())
 		return 0;
-	return __chunksize * chunks.size() - __builtin_clzll(chunks.back());
+	return __chunksize * chunks.size() - __builtin_clz(chunks.back());
 }
 
 bool buint::get(size_t pos) {
@@ -69,6 +65,14 @@ void buint::set(size_t pos, bool val) {
 	chunks.resize(cur);
 }
 
+unsigned long long buint::to_ulong() {
+	if(chunks.size() == 0)
+		return 0;
+	if(chunks.size() == 1)
+		return chunks[0];
+	return ((unsigned long long)chunks[1] << __chunksize) + chunks[0];
+}
+
 buint operator + (const buint &a, const buint &b) {
 	if(a.chunks.size() > b.chunks.size())
 		return b + a;
@@ -89,7 +93,7 @@ buint operator + (const buint &a, const buint &b) {
 			c.chunks.push_back(r);
 	}
 	
-	size_t cur = c.size();
+	size_t cur = c.chunks.size();
 	while(cur != 0 && c.chunks[cur - 1] == 0)
 		cur--;
 	c.chunks.resize(cur);

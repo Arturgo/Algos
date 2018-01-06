@@ -3,8 +3,7 @@
 using namespace std;
 
 int main() {
-	buint a, b;
-	a.set(10, 1);
-	b.set(10, 1);
-	cout << (a + b).size() << endl;
+	buint a(10), b(12);
+	buint sum = a + b;
+	cout << sum.to_ulong() << endl;
 }
