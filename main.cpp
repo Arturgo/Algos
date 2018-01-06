@@ -19,16 +19,14 @@ int main() {
 	
 	clock_t deb = clock();
 	
-	int r = 0;
-	for(int i = 0;i < 1000000 || r != 0;i++) {
-		int s = r + va[i] + vb[i];
-		vc.push_back(s % 2);
-		r = s / 2;
+	vc.resize(1000004);
+	for(int i = 0;i < 1000000;i++) {
+		vc[i] = va[i] | vb[i];
 	}
 	
 	clock_t mil = clock();
 	
-	c = a + b;
+	c = a | b;
 	
 	clock_t fin = clock();
 	

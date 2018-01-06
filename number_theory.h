@@ -18,8 +18,11 @@ public:
 	buint(unsigned long long val);
 	
 	size_t nbChunks() const;
+	deque<unsigned int>& chunksRef();
+	const deque<unsigned int>& chunksCRef() const;
 	unsigned int getChunk(size_t pos) const;
 	void setChunk(size_t pos, unsigned int val);
+	void prepareChunks(size_t size);
 	void clean();
 	size_t size() const;
 	bool get(size_t pos) const;
@@ -48,6 +51,14 @@ inline size_t buint::nbChunks() const {
 	return chunks.size();
 }
 
+inline deque<unsigned int>& buint::chunksRef() {
+	return chunks;
+}
+
+inline const deque<unsigned int>& buint::chunksCRef() const {
+	return chunks;
+}
+
 inline unsigned int buint::getChunk(size_t pos) const {
 	if(pos >= nbChunks())
 		return 0;
@@ -60,6 +71,12 @@ inline void buint::setChunk(size_t pos, unsigned int val) {
 	}
 	
 	chunks[pos] = val;
+	
+	clean();
+}
+
+inline void buint::prepareChunks(size_t size) {
+	chunks.resize(max(size, nbChunks()));
 }
 
 inline void buint::clean() {
@@ -94,12 +111,22 @@ inline unsigned long long buint::to_ulong() const {
 	return ((unsigned long long)getChunk(1) << __chunksize) + getChunk(0);
 }
 
-inline buint& operator += (buint &a, const buint &b) {	
+inline buint& operator += (buint &a, const buint &b) {
+	a.prepareChunks(max(a.nbChunks(), b.nbChunks()) + 1);
 	size_t r = 0;
-	for(size_t cur = 0;cur < b.nbChunks() || r != 0;cur++) {
-		size_t s = r + a.getChunk(cur) + b.getChunk(cur);
+	size_t cur = 0;
+	
+	deque<unsigned int>& chunksA = a.chunksRef();
+	const deque<unsigned int>& chunksB = b.chunksCRef();
+	
+	for(;cur < b.nbChunks();cur++) {
+		size_t s = r + chunksA[cur] + chunksB[cur];
 		r = s >> __chunksize;
-		a.setChunk(cur, s - (r << __chunksize));
+		chunksA[cur] = s - (r << __chunksize);
+	}
+	
+	if(r != 0) {
+		chunksA[cur] = r;
 	}
 	a.clean();
 	return a;
@@ -112,8 +139,13 @@ inline buint operator + (const buint &a, const buint &b) {
 }
 
 inline buint& operator |= (buint &a, const buint &b) {
+	a.prepareChunks(max(a.nbChunks(), b.nbChunks()) + 1);
+	
+	deque<unsigned int>& chunksA = a.chunksRef();
+	const deque<unsigned int>& chunksB = b.chunksCRef();
+	
 	for(size_t cur = 0;cur < b.nbChunks();cur++) {
-		a.setChunk(cur, a.getChunk(cur) | b.getChunk(cur));
+		chunksA[cur] = chunksA[cur] | chunksB[cur];
 	}
 	a.clean();
 	return a;
