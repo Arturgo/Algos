@@ -35,6 +35,8 @@ buint& operator += (buint& a, const buint& b);
 buint operator + (const buint &a, const buint &b);
 buint& operator |= (buint &a, const buint &b);
 buint operator | (const buint &a, const buint &b);
+buint& operator &= (buint &a, const buint &b);
+buint operator & (const buint &a, const buint &b);
 
 buint::buint() {
 }
@@ -154,6 +156,24 @@ inline buint& operator |= (buint &a, const buint &b) {
 inline buint operator |  (const buint &a, const buint &b) {
 	buint c = a;
 	c |= b;
+	return c;
+}
+
+inline buint& operator &= (buint &a, const buint& b) {
+	deque<unsigned int>& chunksA = a.chunksRef();
+	const deque<unsigned int>& chunksB = b.chunksCRef();
+	
+	chunksA.resize(chunksB.size());
+	for(size_t cur = 0;cur < b.nbChunks();cur++) {
+		chunksA[cur] = chunksA[cur] & chunksB[cur];
+	}
+	a.clean();	
+	return a;
+}
+
+inline buint operator &  (const buint &a, const buint &b) {
+	buint c = a;
+	c &= b;
 	return c;
 }
 
