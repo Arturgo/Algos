@@ -42,6 +42,8 @@ buint& operator ^= (buint &a, const buint &b);
 buint operator ^ (const buint &a, const buint &b);
 buint& operator <<= (buint &a, size_t dec);
 buint operator << (const buint &a, size_t dec);
+buint& operator >>= (buint &a, size_t dec);
+buint operator >> (const buint &a, size_t dec);
 
 buint::buint() {
 }
@@ -205,7 +207,7 @@ inline buint& operator <<= (buint &a, size_t dec) {
 	deque<unsigned int>& chunksA = a.chunksRef();
 	chunksA.push_back(0);
 	
-	int mod = dec % __chunksize;
+	size_t mod = dec % __chunksize;
 	if(mod != 0) {
 		unsigned long long r = 0;
 		for(size_t iChunk = 0;iChunk < a.nbChunks();iChunk++) {
@@ -226,6 +228,37 @@ inline buint& operator <<= (buint &a, size_t dec) {
 inline buint operator << (const buint &a, size_t dec) {
 	buint c = a;
 	c <<= dec;
+	return c;
+}
+
+inline buint& operator >>= (buint &a, size_t dec) {
+	deque<unsigned int>& chunksA = a.chunksRef();
+	
+	size_t mod = dec % __chunksize;
+	if(mod != 0) {
+		unsigned long long r = 0;
+		size_t iChunk = chunksA.size();
+		while(iChunk != 0) {
+			iChunk--;
+			unsigned long long s = (r << __chunksize) >> mod;
+			r = chunksA[iChunk] & (__least_bits >> mod);
+			chunksA[iChunk] >>= mod;
+			chunksA[iChunk] |= s;
+		}
+	}
+	
+	for(size_t n = 0; n < dec / __chunksize;n++) {
+		if(!chunksA.empty())
+			chunksA.pop_front();
+	}
+	
+	a.clean();
+	return a;
+}
+
+inline buint operator >> (const buint &a, size_t dec) {
+	buint c = a;
+	c >>= dec;
 	return c;
 }
 
