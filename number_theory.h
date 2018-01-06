@@ -20,6 +20,7 @@ public:
 	size_t nbChunks() const;
 	unsigned int getChunk(size_t pos) const;
 	void setChunk(size_t pos, unsigned int val);
+	void clean();
 	size_t size() const;
 	bool get(size_t pos) const;
 	void set(size_t pos, bool val);
@@ -29,6 +30,8 @@ public:
 
 buint& operator += (buint& a, const buint& b);
 buint operator + (const buint &a, const buint &b);
+buint& operator |= (buint &a, const buint &b);
+buint operator | (const buint &a, const buint &b);
 
 buint::buint() {
 }
@@ -38,6 +41,7 @@ buint::buint(unsigned long long val) {
 	unsigned int chunk0 = val - (chunk1 << __chunksize);
 	setChunk(0, chunk0);
 	setChunk(1, chunk1);
+	clean();
 }
 
 inline size_t buint::nbChunks() const {
@@ -56,11 +60,14 @@ inline void buint::setChunk(size_t pos, unsigned int val) {
 	}
 	
 	chunks[pos] = val;
-	
+}
+
+inline void buint::clean() {
 	size_t cur = nbChunks();
 	while(cur != 0 && chunks[cur - 1] == 0)
 		cur--;
-	chunks.resize(cur);
+	if(cur != nbChunks())
+		chunks.resize(cur);
 }
 
 inline size_t buint::size() const {
@@ -80,6 +87,7 @@ inline void buint::set(size_t pos, bool val) {
 	
 	int chunk = pos >> __chunksizelog;
 	setChunk(chunk, getChunk(chunk) ^ (1 << (pos & __chunkmask)));
+	clean();
 }
 
 inline unsigned long long buint::to_ulong() const {
@@ -93,13 +101,27 @@ inline buint& operator += (buint &a, const buint &b) {
 		r = s >> __chunksize;
 		a.setChunk(cur, s - (r << __chunksize));
 	}
-	
+	a.clean();
 	return a;
 }
 
 inline buint operator + (const buint &a, const buint &b) {
 	buint c = a;
 	c += b;
+	return c;
+}
+
+inline buint& operator |= (buint &a, const buint &b) {
+	for(size_t cur = 0;cur < b.nbChunks();cur++) {
+		a.setChunk(cur, a.getChunk(cur) | b.getChunk(cur));
+	}
+	a.clean();
+	return a;
+}
+
+inline buint operator |  (const buint &a, const buint &b) {
+	buint c = a;
+	c |= b;
 	return c;
 }
 
