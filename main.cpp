@@ -3,5 +3,8 @@
 using namespace std;
 
 int main() {
-	cout << pgcd<int>(2000, 1000) << endl;
+	bint a, b;
+	a.set(10, 1);
+	b.set(10, 1);
+	cout << (a + b).size() << endl;
 }
