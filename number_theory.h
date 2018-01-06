@@ -37,6 +37,8 @@ buint& operator |= (buint &a, const buint &b);
 buint operator | (const buint &a, const buint &b);
 buint& operator &= (buint &a, const buint &b);
 buint operator & (const buint &a, const buint &b);
+buint& operator ^= (buint &a, const buint &b);
+buint operator ^ (const buint &a, const buint &b);
 
 buint::buint() {
 }
@@ -147,13 +149,13 @@ inline buint& operator |= (buint &a, const buint &b) {
 	const deque<unsigned int>& chunksB = b.chunksCRef();
 	
 	for(size_t cur = 0;cur < b.nbChunks();cur++) {
-		chunksA[cur] = chunksA[cur] | chunksB[cur];
+		chunksA[cur] |= chunksB[cur];
 	}
 	a.clean();
 	return a;
 }
 
-inline buint operator |  (const buint &a, const buint &b) {
+inline buint operator | (const buint &a, const buint &b) {
 	buint c = a;
 	c |= b;
 	return c;
@@ -165,15 +167,34 @@ inline buint& operator &= (buint &a, const buint& b) {
 	
 	chunksA.resize(chunksB.size());
 	for(size_t cur = 0;cur < b.nbChunks();cur++) {
-		chunksA[cur] = chunksA[cur] & chunksB[cur];
+		chunksA[cur] &= chunksB[cur];
 	}
 	a.clean();	
 	return a;
 }
 
-inline buint operator &  (const buint &a, const buint &b) {
+inline buint operator & (const buint &a, const buint &b) {
 	buint c = a;
 	c &= b;
+	return c;
+}
+
+inline buint& operator ^= (buint &a, const buint &b) {
+	a.prepareChunks(max(a.nbChunks(), b.nbChunks()) + 1);
+	
+	deque<unsigned int>& chunksA = a.chunksRef();
+	const deque<unsigned int>& chunksB = b.chunksCRef();
+	
+	for(size_t cur = 0;cur < b.nbChunks();cur++) {
+		chunksA[cur] ^= chunksB[cur];
+	}
+	a.clean();
+	return a;
+}
+
+inline buint operator ^ (const buint &a, const buint &b) {
+	buint c = a;
+	c ^= b;
 	return c;
 }
 
