@@ -8,4 +8,9 @@ T pgcd(T a, T b) {
 	return pgcd<T>(b % a, a);
 }
 
+template<class T>
+T ppcm(T a, T b) {
+	return a / pgcd<T>(a, b) * b;
+}
+
 #endif
