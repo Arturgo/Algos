@@ -9,6 +9,7 @@ using namespace std;
 const size_t __chunksize = sizeof(unsigned int) * 8;
 const size_t __chunksizelog = __builtin_log(__chunksize);
 const size_t __chunkmask = __chunksize - 1;
+const unsigned long long __least_bits = (1ll << __chunksize) - 1;
 
 class buint {
 private:
@@ -39,13 +40,15 @@ buint& operator &= (buint &a, const buint &b);
 buint operator & (const buint &a, const buint &b);
 buint& operator ^= (buint &a, const buint &b);
 buint operator ^ (const buint &a, const buint &b);
+buint& operator <<= (buint &a, size_t dec);
+buint operator << (const buint &a, size_t dec);
 
 buint::buint() {
 }
 
 buint::buint(unsigned long long val) {
 	unsigned long long chunk1 = val >> __chunksize;
-	unsigned int chunk0 = val - (chunk1 << __chunksize);
+	unsigned int chunk0 = val & __least_bits;
 	setChunk(0, chunk0);
 	setChunk(1, chunk1);
 	clean();
@@ -126,7 +129,7 @@ inline buint& operator += (buint &a, const buint &b) {
 	for(;cur < b.nbChunks();cur++) {
 		size_t s = r + chunksA[cur] + chunksB[cur];
 		r = s >> __chunksize;
-		chunksA[cur] = s - (r << __chunksize);
+		chunksA[cur] = s & __least_bits;
 	}
 	
 	if(r != 0) {
@@ -198,9 +201,38 @@ inline buint operator ^ (const buint &a, const buint &b) {
 	return c;
 }
 
+inline buint& operator <<= (buint &a, size_t dec) {
+	deque<unsigned int>& chunksA = a.chunksRef();
+	chunksA.push_back(0);
+	
+	int mod = dec % __chunksize;
+	if(mod != 0) {
+		unsigned long long r = 0;
+		for(size_t iChunk = 0;iChunk < a.nbChunks();iChunk++) {
+			unsigned long long s = (chunksA[iChunk] << mod) | r;
+			r = s >> __chunksize;
+			chunksA[iChunk] = s & __least_bits;
+		}
+	}
+	
+	for(size_t n = 0; n < dec / __chunksize;n++) {
+		chunksA.push_front(0);
+	}
+	
+	a.clean();
+	return a;
+}
+
+inline buint operator << (const buint &a, size_t dec) {
+	buint c = a;
+	c <<= dec;
+	return c;
+}
+
 inline size_t log2(buint& a) {
 	return a.size() - 1;
 }
+
 /*PGCD and PPCM*/
 
 template<class T>
