@@ -17,13 +17,18 @@ public:
 	buint();
 	buint(unsigned long long val);
 	
-	size_t size();
-	bool get(size_t pos);
+	size_t nbChunks() const;
+	unsigned int getChunk(size_t pos) const;
+	void setChunk(size_t pos, unsigned int val);
+	size_t size() const;
+	bool get(size_t pos) const;
 	void set(size_t pos, bool val);
 	
-	unsigned long long to_ulong();
-	friend buint operator + (const buint& a, const buint &b);
+	unsigned long long to_ulong() const;
 };
+
+buint& operator += (buint& a, const buint& b);
+buint operator + (const buint &a, const buint &b);
 
 buint::buint() {
 }
@@ -31,80 +36,76 @@ buint::buint() {
 buint::buint(unsigned long long val) {
 	unsigned long long chunk1 = val >> __chunksize;
 	unsigned int chunk0 = val - (chunk1 << __chunksize);
-	if(chunk0 != 0 || chunk1 != 0)
-		chunks.push_back(chunk0);
-	if(chunk1 != 0)
-		chunks.push_back(chunk1);
+	setChunk(0, chunk0);
+	setChunk(1, chunk1);
 }
 
-size_t buint::size() {
-	if(chunks.empty())
+inline size_t buint::nbChunks() const {
+	return chunks.size();
+}
+
+inline unsigned int buint::getChunk(size_t pos) const {
+	if(pos >= nbChunks())
 		return 0;
-	return __chunksize * chunks.size() - __builtin_clz(chunks.back());
+	return chunks[pos];
 }
 
-bool buint::get(size_t pos) {
-	size_t chunk = pos >> __chunksizelog;
-	if(chunk >= chunks.size())
-		return 0;
-	return (chunks[chunk] >> (pos & __chunkmask)) & 1;
-}
-
-void buint::set(size_t pos, bool val) {
-	if(get(pos) == val)
-		return;
-	size_t chunk = pos >> __chunksizelog;
-	if(chunk >= chunks.size())
-		chunks.resize(chunk + 1, 0);
+inline void buint::setChunk(size_t pos, unsigned int val) {
+	if(pos >= nbChunks()) {
+		chunks.resize(pos + 1, 0);
+	}
 	
-	chunks[chunk] ^= (1 << (pos & __chunkmask));
+	chunks[pos] = val;
 	
-	size_t cur = size();
+	size_t cur = nbChunks();
 	while(cur != 0 && chunks[cur - 1] == 0)
 		cur--;
 	chunks.resize(cur);
 }
 
-unsigned long long buint::to_ulong() {
-	if(chunks.size() == 0)
+inline size_t buint::size() const {
+	if(chunks.empty())
 		return 0;
-	if(chunks.size() == 1)
-		return chunks[0];
-	return ((unsigned long long)chunks[1] << __chunksize) + chunks[0];
+	return __chunksize * nbChunks() - __builtin_clz(chunks.back());
 }
 
-buint operator + (const buint &a, const buint &b) {
-	if(a.chunks.size() > b.chunks.size())
-		return b + a;
+inline bool buint::get(size_t pos) const {
+	size_t chunk = pos >> __chunksizelog;
+	return (getChunk(chunk) >> (pos & __chunkmask)) & 1;
+}
+
+inline void buint::set(size_t pos, bool val) {
+	if(get(pos) == val)
+		return;
 	
-	buint c = b;
-	
+	int chunk = pos >> __chunksizelog;
+	setChunk(chunk, getChunk(chunk) ^ (1 << (pos & __chunkmask)));
+}
+
+inline unsigned long long buint::to_ulong() const {
+	return ((unsigned long long)getChunk(1) << __chunksize) + getChunk(0);
+}
+
+inline buint& operator += (buint &a, const buint &b) {	
 	size_t r = 0;
-	for(size_t cur = 0;cur < a.chunks.size();cur++) {
-		size_t s = r + a.chunks[cur] + c.chunks[cur];
+	for(size_t cur = 0;cur < b.nbChunks() || r != 0;cur++) {
+		size_t s = r + a.getChunk(cur) + b.getChunk(cur);
 		r = s >> __chunksize;
-		c.chunks[cur] = s - (r << __chunksize);
+		a.setChunk(cur, s - (r << __chunksize));
 	}
 	
-	if(r != 0) {
-		if(a.chunks.size() < b.chunks.size())
-			c.chunks[a.chunks.size()] = r;
-		else
-			c.chunks.push_back(r);
-	}
-	
-	size_t cur = c.chunks.size();
-	while(cur != 0 && c.chunks[cur - 1] == 0)
-		cur--;
-	c.chunks.resize(cur);
-	
+	return a;
+}
+
+inline buint operator + (const buint &a, const buint &b) {
+	buint c = a;
+	c += b;
 	return c;
 }
 
-size_t log2(buint& a) {
+inline size_t log2(buint& a) {
 	return a.size() - 1;
 }
-
 /*PGCD and PPCM*/
 
 template<class T>
@@ -115,13 +116,13 @@ T pgcd(T a, T b) {
 }
 
 template<class T>
-T ppcm(T a, T b) {
+inline T ppcm(T a, T b) {
 	return a / pgcd<T>(a, b) * b;
 }
 
 /*Factorial*/
 template<class T>
-T factorial(T a) {
+inline T factorial(T a) {
 	T prod = 1;
 	for(T fact = 1;fact <= a;fact++)
 		prod *= fact;
