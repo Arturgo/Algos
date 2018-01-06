@@ -3,7 +3,7 @@
 using namespace std;
 
 int main() {
-	bint a, b;
+	buint a, b;
 	a.set(10, 1);
 	b.set(10, 1);
 	cout << (a + b).size() << endl;

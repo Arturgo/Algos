@@ -4,35 +4,57 @@
 #include <deque>
 using namespace std;
 
+/* Big Unsigned Ints */
 const size_t __chunksize = sizeof(unsigned int) * 8;
 const size_t __chunksizelog = __builtin_log(__chunksize);
 const size_t __chunkmask = __chunksize - 1;
 
-class bint {
+class buint {
 private:
 	deque<unsigned int> chunks;
 public:
+	buint();
+	buint(unsigned int val);
+	buint(unsigned long long val);
+	
 	size_t size();
 	bool get(size_t pos);
 	void set(size_t pos, bool val);
 	
-	friend bint operator + (const bint& a, const bint &b);
+	friend buint operator + (const buint& a, const buint &b);
 };
 
-size_t bint::size() {
+buint::buint() {
+}
+
+buint::buint(unsigned int val) {
+	if(val != 0)
+		chunks.push_back(val);
+}
+
+buint::buint(unsigned long long val) {
+	unsigned long long chunk1 = val >> __chunksize;
+	unsigned int chunk0 = val - (chunk1 << __chunksize);
+	if(chunk0 != 0 || chunk1 != 0)
+		chunks.push_back(chunk0);
+	if(chunk1 != 0)
+		chunks.push_back(chunk1);
+}
+
+size_t buint::size() {
 	if(chunks.empty())
 		return 0;
 	return __chunksize * chunks.size() - __builtin_clzll(chunks.back());
 }
 
-bool bint::get(size_t pos) {
+bool buint::get(size_t pos) {
 	size_t chunk = pos >> __chunksizelog;
 	if(chunk >= chunks.size())
 		return 0;
 	return (chunks[chunk] >> (pos & __chunkmask)) & 1;
 }
 
-void bint::set(size_t pos, bool val) {
+void buint::set(size_t pos, bool val) {
 	if(get(pos) == val)
 		return;
 	size_t chunk = pos >> __chunksizelog;
@@ -47,11 +69,11 @@ void bint::set(size_t pos, bool val) {
 	chunks.resize(cur);
 }
 
-bint operator + (const bint &a, const bint &b) {
+buint operator + (const buint &a, const buint &b) {
 	if(a.chunks.size() > b.chunks.size())
 		return b + a;
 	
-	bint c = b;
+	buint c = b;
 	
 	size_t r = 0;
 	for(size_t cur = 0;cur < a.chunks.size();cur++) {
@@ -75,9 +97,11 @@ bint operator + (const bint &a, const bint &b) {
 	return c;
 }
 
-size_t log2(bint& a) {
+size_t log2(buint& a) {
 	return a.size() - 1;
 }
+
+/*PGCD and PPCM*/
 
 template<class T>
 T pgcd(T a, T b) {
@@ -91,6 +115,7 @@ T ppcm(T a, T b) {
 	return a / pgcd<T>(a, b) * b;
 }
 
+/*Factorial*/
 template<class T>
 T factorial(T a) {
 	T prod = 1;
